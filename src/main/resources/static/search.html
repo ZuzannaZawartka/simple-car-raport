@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>spark</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:sans-serif
+        }
+        body{
+            margin: 2rem 1rem
+        }
+        #table{
+            margin: 2rem 0;
+            border-collapse:collapse
+        }
+        td{
+            border: 1px solid #255;
+            padding: .8rem 1.2rem
+        }
+        button{
+            padding:.5rem;
+            background:none;
+            font-weight:700;
+            outline:none;
+            border:3px solid blueviolet;
+
+        }
+        button:hover{
+            background-color: #225555;
+        }
+        .edit{border-color:teal}
+        #overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5)}
+        #editing{
+            display: none;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-color: #777777;
+        }
+        #model-edit{
+            width: 400px;
+            height: 30px;
+        }
+
+        .invoices{
+            display: flex;
+            margin: 20px;
+        }
+
+        a {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+<p>Search Invoices page</p>
+<button id="generateCar">Generuj losową bazę samochodów</button>
+<div class="invoices">
+    <a href="index.html">Strona index</a>
+    <a href="cars.html">Edit/Update cars</a>
+    <a href="admin.html">Generate Invoice</a>
+    <a href="search.html">Search Invoice</a>
+</div>
+<div class="invoices" id="all">
+    <p>Faktura za wszystkie auta :</p>
+    <button id="generateForAll">generuj fakturę</button>
+</div>
+
+<div class="invoices" id="years">
+    <p>Faktura - auta z danego rocznika :</p>
+    <select id="selectYear">
+        <option>2000</option>
+        <option>2001</option>
+        <option>2002</option>
+    </select>
+    <button id="generateForYears">generuj fakturę</button>
+</div>
+
+<div class="invoices" id="prices">
+    <p>Faktura - autaa z danego zakresu cen :</p>
+    <input id="min_price" type="number">
+    <input id="max_price"type="number">
+    <button id="generateForPrice">generuj fakturę</button>
+</div>
+
+<table id="table">
+    <tr>
+        <td>lp</td>
+        <td>marka</td>
+        <td>rok</td>
+        <td>poduszki</td>
+        <td>kolor</td>
+        <td>zdjęcie</td>
+        <td>data sprzedaży</td>
+        <td>cena</td>
+        <td>vat</td>
+    </tr>
+</table>
+
+<script>
+    const table = document.getElementById('table');
+
+
+
+    async function drawTable(data = null) {
+        if (!data) return;
+        let idx =1;
+        data.forEach(d => {
+            console.log(d)
+            const tr = document.createElement('tr');
+
+            const id = document.createElement('td');
+            id.textContent = idx;
+            tr.appendChild(id);
+
+
+            const model = document.createElement('td');
+            model.textContent = d.model;
+            tr.appendChild(model);
+
+            const year = document.createElement('td');
+            year.textContent = d.year;
+            tr.appendChild(year);
+
+            const airbags = document.createElement('td');
+
+            let airbagsText="";
+            d.airbags.forEach(air=>{
+                airbagsText+=air.description +" : " + air.value +"<br>";
+
+            })
+            airbags.innerHTML
+                = airbagsText;
+
+            tr.appendChild(airbags);
+
+            const color = document.createElement('td');
+            color.style.backgroundColor = d.color;
+            tr.appendChild(color);
+
+            const image = document.createElement('img');
+            image.src = "images/"+d.image;
+            image.style.width = "200px";
+            image.style.height = "150px";
+            tr.appendChild(image);
+
+
+            const date = document.createElement('td');
+            date.textContent = d.date;
+            tr.appendChild(date);
+
+            const price = document.createElement('td');
+            price.textContent = d.price;
+            tr.appendChild(price);
+
+            const vat = document.createElement('td');
+            vat.textContent = d.vat;
+            tr.appendChild(vat);
+
+
+
+            table.appendChild(tr);
+            idx++;
+        });
+
+        await fetchYears()
+    }
+
+
+    async function downloadz(uuid) {
+        const options = {
+            method: 'GET'
+        };
+
+        const res = await fetch('/download', options);
+        if (!res.ok) return res.status;
+        //table.innerHTML = '';
+        await getData();
+    }
+
+    document.getElementById("generateCar").addEventListener("click" ,()=> generateCar2())
+    async function generateCar2() {
+        const options = {
+            method: 'GET',
+        };
+        const res = await fetch('/generateCar2', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+
+
+
+    document.getElementById("generateForAll").addEventListener("click" ,()=> generateForAll())
+    async function generateForAll() {
+        const options = {
+            method: 'GET',
+        };
+        const res = await fetch('/generateForAll', options);
+        if (!res.ok) return res.status;
+        let downloadButton;
+
+        if(!document.getElementById("downloadALL")){
+           downloadButton = document.createElement('a');
+        }else{
+            downloadButton  =document.getElementById("downloadALL")
+        }
+            downloadButton.href = `download/${await res.text()}.pdf`
+        downloadButton.id = "downloadALL"
+            downloadButton.classList.add('pobierz');
+            downloadButton.textContent = 'Pobierz';
+            document.getElementById("all").appendChild(downloadButton)
+
+        await getData();
+    }
+
+
+    document.getElementById("generateForYears").addEventListener("click" ,()=> generateForYears())
+    async function generateForYears() {
+        const options = {
+            method: 'POST',
+            body: document.getElementById("selectYear").value
+        };
+
+        const res = await fetch('/generateForYears', options);
+        if (!res.ok) return res.status;
+        let downloadButton;
+
+        if(!document.getElementById("downloadYears")){
+            downloadButton = document.createElement('a');
+        }else{
+            downloadButton  =document.getElementById("downloadYears")
+        }
+        downloadButton.href = `download/${await res.text()}.pdf`
+        downloadButton.id = "downloadYears"
+        downloadButton.classList.add('pobierz');
+        downloadButton.textContent = 'Pobierz';
+        document.getElementById("years").appendChild(downloadButton)
+
+        await getData();
+    }
+
+    document.getElementById("generateForPrice").addEventListener("click" ,()=> generateForPrice())
+    async function generateForPrice() {
+        const options = {
+            method: 'POST',
+            body: document.getElementById("min_price").value +"/"+document.getElementById("max_price").value,
+
+        };
+        const res = await fetch('/generateForPrice', options);
+        if (!res.ok) return res.status;
+        let downloadButton;
+
+        if(!document.getElementById("price")){
+            downloadButton = document.createElement('a');
+        }else{
+            downloadButton  =document.getElementById("price")
+        }
+        downloadButton.href = `download/${await res.text()}.pdf`
+        downloadButton.id = "price"
+        downloadButton.classList.add('pobierz');
+        downloadButton.textContent = 'Pobierz';
+        document.getElementById("prices").appendChild(downloadButton)
+
+        await getData();
+    }
+
+
+
+    async function getData() {
+        table.innerHTML = '';
+        const res = await fetch('/json');
+
+        if (!res.ok) return res.status;
+
+        const data = await res.json();
+
+        document.getElementById('table').innerHTML=`
+        <tr>
+        <td>lp</td>
+        <td>marka</td>
+        <td>rok</td>
+        <td>poduszki</td>
+        <td>kolor</td>
+        <td>zdjęcie</td>
+        <td>data sprzedaży</td>
+        <td>cena</td>
+        <td>vat</td>
+        </tr>`;
+        console.log(data)
+        await drawTable(data);
+
+
+    }
+
+    async function fetchYears() {
+        const options = {
+            method: 'GET',
+        };
+        const res = await fetch('/getYears', options);
+        if (!res.ok) return res.status;
+        let yrs = await res.json()
+        document.getElementById("selectYear").innerHTML = "";
+        console.log(yrs)
+        for(let i =0 ; i < yrs.length;i++){
+
+            let opt = document.createElement("option")
+            opt.value = yrs[i];
+            opt.textContent = yrs[i];
+            document.getElementById("selectYear").appendChild(opt);
+        }
+
+
+    }
+
+
+    getData();
+</script>
+</body>
+</html>

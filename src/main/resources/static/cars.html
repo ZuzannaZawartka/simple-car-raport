@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>spark</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:sans-serif
+        }
+        body{
+            margin: 2rem 1rem
+        }
+        #table{
+            margin: 2rem 0;
+            border-collapse:collapse
+        }
+        td{
+            border: 1px solid #255;
+            padding: .8rem 1.2rem
+        }
+        button{
+            padding:.5rem;
+            background:none;
+            font-weight:700;
+            outline:none;
+            border:3px solid blueviolet;
+
+        }
+        button:hover{
+            background-color: #225555;
+        }
+        .edit{border-color:teal}
+        #overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(51, 47, 55, 0.06)}
+        #editing{
+            top: 0;
+            text-align: center;
+            display: flex;
+            display: none;
+            align-items: center;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            position: absolute;
+            background-color: #777777;
+        }
+
+        input {
+            margin: 10px;
+            width:150px;
+        }
+        select{
+            margin: 10px;
+            width:150px;
+        }
+        .opt{
+            width:30px;
+        }
+
+        #model-edit{
+            width: 400px;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+<p>Edit/Update page</p>
+<div>
+    <a href="index.html">Strona index</a>
+    <a href="cars.html">Edit/Update cars</a>
+    <a href="admin.html">Generate Invoice</a>
+    <a href="search.html">Search Invoice</a>
+</div>
+
+<table id="table">
+
+</table>
+
+<div id="editing">
+    <div id="editing2">
+        <label>MODEL :<input id="model" type="text" placeholder="model"></label>
+
+    <br> <br>
+        <labeL>ROK : <select id="rok"></select></labeL>
+    <br> <br>
+    <labeL>
+        poduszki powietrzne (kierowca-pasażer-kanapa-boczne)
+        <input class="opt" id="kierowca" type="checkbox">
+        <input class="opt" id="pasażer" type="checkbox">
+        <input class="opt" id="kanapa" type="checkbox">
+        <input class="opt" id="boczne" type="checkbox">
+    </labeL>
+    <br> <br>
+    <labeL>KOLOR : <input id="kolor" type="color"></labeL>
+    <br> <br>
+    <button id="edytuj">edytuj</button>
+    </div>
+</div>
+<script>
+
+    const table = document.getElementById('table');
+    function drawTable(data = null) {
+        if (!data) return;
+        let idx =0;
+        data.forEach(d => {
+            const tr = document.createElement('tr');
+
+            const id = document.createElement('td');
+            id.textContent = idx;
+            tr.appendChild(id);
+
+            const uuid = document.createElement('td');
+            uuid.textContent = d.uuid;
+            tr.appendChild(uuid);
+
+            const model = document.createElement('td');
+            model.textContent = d.model;
+            tr.appendChild(model);
+
+            const year = document.createElement('td');
+            year.textContent = d.year;
+            tr.appendChild(year);
+
+            const airbags = document.createElement('td');
+
+            let airbagsText="";
+            d.airbags.forEach(air=>{
+                airbagsText+=air.description +" : " + air.value +"<br>";
+
+            })
+            airbags.innerHTML
+                = airbagsText;
+
+            tr.appendChild(airbags);
+
+            const color = document.createElement('td');
+            color.style.backgroundColor = d.color;
+            tr.appendChild(color);
+
+            const del = document.createElement('td');
+            const delButton = document.createElement('button');
+            delButton.textContent = 'delete';
+            delButton.addEventListener('click', () => delCar(d.uuid))
+            del.appendChild(delButton);
+            tr.appendChild(del);
+
+            const edit = document.createElement('td');
+            const editButton = document.createElement('button');
+            editButton.addEventListener('click', () => {
+                document.getElementById("editing").innerHTML = `<div id="editing2">
+            <label>MODEL :<input id="model" type="text" value="${d.model}" placeholder="model"></label>
+
+            <br> <br>
+            <labeL>ROK : <select id="rok"></select></labeL>
+            <br> <br>
+            <labeL>
+             poduszki powietrzne (kierowca-pasażer-kanapa-boczne)
+            <input  class="opt" id="kierowca" type="checkbox">
+            <input class="opt" id="pasażer" type="checkbox">
+            <input class="opt" id="kanapa" type="checkbox">
+            <input class="opt" id="boczne" type="checkbox">
+            </labeL>
+
+            <br> <br>
+             <labeL>KOLOR : <input id="kolor" value="${d.color}" type="color"></labeL>
+            <br> <br>
+            <button id="edytuj">edytuj</button>
+            </div>`
+                document.getElementById("editing").style.display = "block";
+                d.airbags.forEach(air=>{
+                    console.log(air)
+                    if(air.value){
+                        console.log(air.description)
+                        console.log(document.getElementsByClassName("opt"))
+                        console.log(document.getElementById(`${air.description}`))
+                        if( document.getElementById(`${air.description}`)){
+                            document.getElementById(`${air.description}`).checked = true;
+                        }
+
+                    }
+
+                })
+                document.getElementById("edytuj").addEventListener("click", ()=> editCar(d.uuid,d.airbags))
+                for(let i =1990 ; i < 2022;i++){
+                    let opt = document.createElement("option")
+                    opt.value = i;
+                    opt.textContent = i;
+                    document.getElementById("rok").appendChild(opt);
+                }
+            })
+            editButton.classList.add('edit');
+            editButton.textContent = 'edit';
+            edit.appendChild(editButton);
+            tr.appendChild(edit);
+
+
+
+            table.appendChild(tr);
+            idx++;
+        });
+    }
+
+    async function delCar(uuid) {
+        const options = {
+            method: 'POST',
+            body: JSON.stringify({uuid}),
+        };
+        const res = await fetch('/del', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+
+
+    async function downloadz(uuid) {
+        const options = {
+            method: 'GET'
+        };
+
+        const res = await fetch('/download', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+    async function generate(uuid) {
+        const options = {
+            method: 'POST',
+            body: JSON.stringify({uuid}),
+        };
+        const res = await fetch('/generate', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+    async function editCar(uuid) {
+        data1 = getDataEdit(uuid)
+        const options = {
+            method: 'POST',
+            body: JSON.stringify(data1),
+        };
+        const res = await fetch('/edit', options);
+        if (!res.ok) return res.status;
+        document.getElementById("editing").innerHTML = "";
+        document.getElementById("editing").style.display = "none";
+        document.getElementById('table').innerHTML = '';
+        await getData();
+    }
+    let currId = 0;
+
+    function getDataEdit(uuidx) {
+        const obj = {
+            id: currId++,
+            uuid: uuidx,
+            model: document.getElementById('model').value,
+            year: document.getElementById('rok').value,
+            color: document.getElementById('kolor').value,
+            airbags: [
+                {
+                    description: 'kierowca',
+                    value: document.getElementById('kierowca').checked
+                },
+                {
+                    description: 'pasażer',
+                    value: document.getElementById('pasażer').checked
+                },
+                {
+                    description: 'kanapa',
+                    value: document.getElementById('kanapa').checked
+                },
+                {
+                    description: 'boczne',
+                    value: document.getElementById('boczne').checked
+                },
+            ],
+        };
+
+        //console.log(obj);
+        return obj;
+    }
+
+
+    async function getData() {
+        table.innerHTML = '';
+        const res = await fetch('/json');
+
+        if (!res.ok) return res.status;
+
+        const data = await res.json();
+
+        document.getElementById('table').innerHTML="";
+        console.log(data)
+        drawTable(data);
+    }
+
+    getData();
+</script>
+</body>
+</html>

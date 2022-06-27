@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
+        body{margin: 2rem 1rem}
+        form{display:flex;flex-flow:column;align-items:start;gap:1rem;padding:2rem 1rem;margin:2rem 0}
+        input[type="text"]{padding: .5rem .8rem}
+        input[type="checkbox"]{width:20px;height:20px}
+        button{padding:.5rem .8rem;font-family:sans-serif;outline:none;border:none;}
+        button:hover{cursor:pointer;background:#777}
+    </style>
+</head>
+<body>
+<div>
+    <a href="index.html">Strona index</a>
+    <a href="cars.html">Edit/Update cars</a>
+    <a href="admin.html">Generate Invoice</a>
+    <a href="search.html">Search Invoice</a>
+</div>
+<br>
+<div id="form">
+    <input id="model" type="text" placeholder="model">
+    <br> <br>
+    <select id="rok">
+    </select>
+    <br> <br>
+    <labeL>
+        poduszki powietrzne (kierowca-pasażer-kanapa-boczne)
+        <input id="poduszka-kierowca" type="checkbox">
+        <input id="poduszka-pasazer" type="checkbox">
+        <input id="poduszka-kanapa" type="checkbox">
+        <input id="poduszka-boczne" type="checkbox">
+    </labeL>
+    <br> <br>
+    <labeL>kolor <input id="kolor" type="color"></labeL>
+    <br> <br>
+    <button id="dodaj">dodaj</button>
+    <br> <br>
+<a href="/cars.html">Lista</a>
+</div>
+<script>
+
+
+    let currId = 0;
+
+    function getData() {
+        const obj = {
+            id: currId++,
+            uuid: null,
+            model: document.getElementById('model').value,
+            year: document.getElementById('rok').value,
+            color: document.getElementById('kolor').value,
+            airbags: [
+                {
+                    description: 'kierowca',
+                    value: document.getElementById('poduszka-kierowca').checked
+                },
+                {
+                    description: 'pasazer',
+                    value: document.getElementById('poduszka-pasazer').checked
+                },
+                {
+                    description: 'kanapa',
+                    value: document.getElementById('poduszka-kanapa').checked
+                },
+                {
+                    description: 'boczne',
+                    value: document.getElementById('poduszka-boczne').checked
+                }
+
+            ],
+        };
+
+        console.log("getdata")
+        return obj;
+    }
+
+    async function addCar() {
+
+        const data = getData();
+
+        const options = {
+            method: "POST",
+            body: JSON.stringify(data),
+        };
+
+        const res = await fetch('/add', options);
+
+        if (!res.ok)
+            return res.status;
+        else
+            return res.json()
+
+    }
+
+
+    document.getElementById('dodaj').addEventListener("click",async function (){
+        let x = await addCar();
+        alert(JSON.stringify(x,null,5))
+
+    })
+
+    for(let i =1990 ; i < 2022;i++){
+        let opt = document.createElement("option")
+        opt.value = i;
+        opt.textContent = i;
+        document.getElementById("rok").appendChild(opt);
+    }
+</script>
+</body>
+</html>

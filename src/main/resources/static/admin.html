@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>spark</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:sans-serif
+        }
+        body{
+            margin: 2rem 1rem
+        }
+        #table{
+            margin: 2rem 0;
+            border-collapse:collapse
+        }
+        td{
+            border: 1px solid #255;
+            padding: .8rem 1.2rem
+        }
+        button{
+            padding:.5rem;
+            background:none;
+            font-weight:700;
+            outline:none;
+            border:3px solid blueviolet;
+
+        }
+        button:hover{
+            background-color: #225555;
+        }
+        .edit{border-color:teal}
+        #overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5)}
+        #editing{
+            display: none;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-color: #777777;
+        }
+        #model-edit{
+            width: 400px;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+<p>Admin page</p>
+<button id="generateCar">Generuj losową bazę samochodów</button>
+<div>
+    <a href="index.html">Strona index</a>
+    <a href="cars.html">Edit/Update cars</a>
+    <a href="admin.html">Generate Invoice</a>
+    <a href="search.html">Search Invoice</a>
+</div>
+
+<table id="table">
+
+</table>
+
+<div id="editing">
+    <input id="model" type="text" placeholder="model">
+    <select id="rok">
+        <option>2000</option>
+        <option>2001</option>
+        <option>2002</option>
+        <option>2003</option>
+        <option>2004</option>
+        <option>2005</option>
+    </select>
+    <labeL>
+        poduszki powietrzne (kierowca-pasażer-kanapa-boczne)
+        <input id="poduszka-kierowca" type="checkbox">
+        <input id="poduszka-pasazer" type="checkbox">
+        <input id="poduszka-kanapa" type="checkbox">
+        <input id="poduszka-boczne" type="checkbox">
+    </labeL>
+    <labeL>kolor <input id="kolor" type="color"></labeL>
+    <button id="edytuj">edytuj</button>
+</div>
+<script>
+
+    const table = document.getElementById('table');
+    function drawTable(data = null) {
+        if (!data) return;
+        let idx =0;
+        data.forEach(d => {
+            const tr = document.createElement('tr');
+
+            const id = document.createElement('td');
+            id.textContent = idx;
+            tr.appendChild(id);
+
+            const uuid = document.createElement('td');
+            uuid.textContent = d.uuid;
+            tr.appendChild(uuid);
+
+            const model = document.createElement('td');
+            model.textContent = d.model;
+            tr.appendChild(model);
+
+            const year = document.createElement('td');
+            year.textContent = d.year;
+            tr.appendChild(year);
+
+            const airbags = document.createElement('td');
+
+            let airbagsText="";
+            d.airbags.forEach(air=>{
+                airbagsText+=air.description +" : " + air.value +"<br>";
+
+            })
+            airbags.innerHTML
+                = airbagsText;
+
+            tr.appendChild(airbags);
+
+            const color = document.createElement('td');
+            color.style.backgroundColor = d.color;
+            tr.appendChild(color);
+
+            const generatePDF = document.createElement('td');
+            const generatePDFButton = document.createElement('button');
+            generatePDFButton.addEventListener('click',() =>generate(d.uuid))
+            generatePDFButton.classList.add('edit');
+            generatePDFButton.textContent = 'Generate PDF';
+            generatePDF.appendChild(generatePDFButton);
+            tr.appendChild(generatePDF);
+
+            if(d.generatedPDF){
+
+                const download = document.createElement('td');
+                const downloadButton = document.createElement('a');
+                downloadButton.href = "download/"+d.uuid+".pdf"
+
+                //downloadButton.addEventListener('click',() =>downloadz(d.uuid))
+                downloadButton.classList.add('pobierz');
+                downloadButton.textContent = 'Pobierz';
+                download.appendChild(downloadButton);
+                tr.appendChild(download);
+            }
+
+            table.appendChild(tr);
+            idx++;
+        });
+    }
+
+    async function delCar(uuid) {
+        const options = {
+            method: 'POST',
+            body: JSON.stringify({uuid}),
+        };
+        const res = await fetch('/del', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+    document.getElementById("generateCar").addEventListener("click" ,()=> generateCar())
+    async function generateCar() {
+        const options = {
+            method: 'GET',
+        };
+        const res = await fetch('/generateCar2', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+
+    async function downloadz(uuid) {
+        const options = {
+            method: 'GET'
+        };
+
+        const res = await fetch('/download', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+    async function generate(uuid) {
+        const options = {
+            method: 'POST',
+            body: JSON.stringify({uuid}),
+        };
+        const res = await fetch('/generate', options);
+        if (!res.ok) return res.status;
+        table.innerHTML = '';
+        await getData();
+    }
+
+    async function editCar(uuid) {
+        data1 = getDataEdit(uuid)
+        const options = {
+            method: 'POST',
+            body: JSON.stringify(data1),
+        };
+        const res = await fetch('/edit', options);
+        if (!res.ok) return res.status;
+        document.getElementById("editing").style.display = "none"
+        document.getElementById('table').innerHTML = '';
+        await getData();
+    }
+    let currId = 0;
+
+    function getDataEdit(uuidx) {
+        const obj = {
+            id: currId++,
+            uuid: uuidx,
+            model: document.getElementById('model').value,
+            year: document.getElementById('rok').value,
+            color: document.getElementById('kolor').value,
+            airbags: [
+                {
+                    description: 'kierowca',
+                    value: document.getElementById('poduszka-kierowca').checked
+                },
+                {
+                    description: 'pasazer',
+                    value: document.getElementById('poduszka-pasazer').checked
+                },
+                {
+                    description: 'kanapa',
+                    value: document.getElementById('poduszka-kanapa').checked
+                },
+                {
+                    description: 'boczne',
+                    value: document.getElementById('poduszka-boczne').checked
+                },
+            ],
+        };
+
+        //console.log(obj);
+        return obj;
+    }
+
+
+    async function getData() {
+        table.innerHTML = '';
+        const res = await fetch('/json');
+
+        if (!res.ok) return res.status;
+
+        const data = await res.json();
+
+        document.getElementById('table').innerHTML="";
+        console.log(data)
+        drawTable(data);
+    }
+
+    getData();
+</script>
+</body>
+</html>
